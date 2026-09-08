@@ -13,10 +13,16 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import os
 import pathlib
 import re
 import subprocess
 import sys
+
+# qai_hub_models prompts interactively before cloning a model's source git repo
+# (asset_loaders._query_yes_no). QAIHM_CI=1 makes it auto-accept. PYTHONUNBUFFERED
+# makes the child stream its stdout line-by-line instead of block-buffering to the pipe.
+CHILD_ENV = {**os.environ, "QAIHM_CI": "1", "PYTHONUNBUFFERED": "1"}
 
 HERE = pathlib.Path(__file__).resolve().parent
 PROJ = HERE.parent
@@ -35,10 +41,9 @@ _JOB = re.compile(r"(https://\S*aihub\.qualcomm\.com/\S+)", re.I)
 def run_one(role: str, module: str, device: str, runtime: str,
             precision: str = "float") -> dict:
     RAW.mkdir(parents=True, exist_ok=True)
-    tag = precision.replace("a", "a").replace("w8a8", "w8a8")
     log_path = RAW / f"{role}.{device.replace(' ', '_')}.{precision}.log"
     cmd = [
-        sys.executable, "-m", f"qai_hub_models.models.{module}.export",
+        sys.executable, "-u", "-m", f"qai_hub_models.models.{module}.export",
         "--device", device,
         "--target-runtime", runtime,       # onnx -> ONNX Runtime + QNN EP on Windows-on-ARM
     ]
@@ -47,21 +52,23 @@ def run_one(role: str, module: str, device: str, runtime: str,
     else:
         cmd += ["--precision", "float"]
     print(f"\n=== {role}: {' '.join(cmd)}", flush=True)
-    # stream live to the terminal AND tee to the log (AI Hub jobs take minutes;
-    # a silent capture looks hung)
+    # stream live to the terminal AND tee to the log; stdin=DEVNULL so any
+    # unexpected prompt fails fast instead of hanging forever.
     lines: list[str] = []
     with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                          text=True, bufsize=1) as p, log_path.open("w") as lf:
+                          stdin=subprocess.DEVNULL, text=True, bufsize=1,
+                          env=CHILD_ENV) as p, log_path.open("w") as lf:
         assert p.stdout is not None
         for line in p.stdout:
             sys.stdout.write(f"    [{role}] {line}")
             sys.stdout.flush()
             lf.write(line)
+            lf.flush()
             lines.append(line)
         rc = p.wait()
     out = "".join(lines)
 
-    class _P:  # keep the rest of the function unchanged
+    class _P:  # minimal stand-in so the rest of the function is unchanged
         returncode = rc
     proc = _P()
     lat = _LAT.search(out)

@@ -8,6 +8,7 @@ source activate "$_PROJ/.venv" 2>/dev/null || conda activate "$_PROJ/.venv"
 # --- isolation: never see or write the user's ~/.local thesis packages ---
 export PYTHONNOUSERSITE=1     # hide ~/.local/lib/pythonX/site-packages from this env
 export PIP_USER=0             # pip must install into the venv, never --user
+export QAIHM_CI=1              # qai_hub_models: auto-accept model-repo git clone (no prompt)
 export QAI_HUB_MODELS_CACHE="$_PROJ/.qai_hub_models"
 
 echo "env: $(python --version)  |  no-user-site: $PYTHONNOUSERSITE  |  project: $_PROJ"
