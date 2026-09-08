@@ -1,0 +1,23 @@
+# env
+.venv/
+__pycache__/
+*.pyc
+
+# model artifacts / large files
+models/*.onnx
+models/*.tflite
+models/*.bin
+models/*.so
+models/*.dlc
+*.pt
+*.pth
+build/
+.qai_hub_models/
+
+# job outputs
+aihub/jobs/*.json
+benchmarks/raw/
+
+# misc
+.DS_Store
+*.log
