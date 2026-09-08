@@ -46,10 +46,24 @@ def run_one(role: str, module: str, device: str, runtime: str,
         cmd += ["--quantize", "w8a8"]
     else:
         cmd += ["--precision", "float"]
-    print(f"\n=== {role}: {' '.join(cmd)}")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    out = proc.stdout + "\n" + proc.stderr
-    log_path.write_text(out)
+    print(f"\n=== {role}: {' '.join(cmd)}", flush=True)
+    # stream live to the terminal AND tee to the log (AI Hub jobs take minutes;
+    # a silent capture looks hung)
+    lines: list[str] = []
+    with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          text=True, bufsize=1) as p, log_path.open("w") as lf:
+        assert p.stdout is not None
+        for line in p.stdout:
+            sys.stdout.write(f"    [{role}] {line}")
+            sys.stdout.flush()
+            lf.write(line)
+            lines.append(line)
+        rc = p.wait()
+    out = "".join(lines)
+
+    class _P:  # keep the rest of the function unchanged
+        returncode = rc
+    proc = _P()
     lat = _LAT.search(out)
     npu = _NPU.search(out)
     job = _JOB.search(out)
