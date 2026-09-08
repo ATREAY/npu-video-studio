@@ -4,14 +4,28 @@
 > a judge can score each in one pass.
 
 ## 1. Technical Implementation
-- Models sourced from Qualcomm AI Hub zoo: <list + versions>.
-- Compiled for `<device>` via AI Hub; target runtime ONNX Runtime + QNN EP (HTP/NPU).
-- Quantisation: INT8 for <models>; quality delta vs FP16: <numbers>.
-- On-device profiling (AI Hub jobs): see `benchmarks/results.md`. Per model:
-  NPU latency, NPU utilisation %, load time, peak memory.
-- **NPU vs CPU:** <Nx> faster, <mW> lower power (headline chart).
-- Concurrency: measured wall-time for the 4-model pipeline per frame = <ms> (≤ 33).
-- Native ARM64 build; verified no CPU fallback (`session.get_providers()` + ORT trace).
+- Models from the Qualcomm AI Hub zoo (`qai-hub-models 0.61.0`): `mediapipe_face`,
+  `mediapipe_selfie`, `quicksrnetmedium`. Low-light (stage 3) is a bring-your-own
+  Zero-DCE model compiled directly via `qai_hub.submit_compile_job` (`aihub/byo_lowlight.py`).
+- Compiled + profiled on a real **Snapdragon X2 Elite CRD** (Windows 11 on ARM) via the
+  AI Hub device farm. Target runtime `onnx` → **ONNX Runtime 1.27.1 + QNN EP** on the
+  Hexagon NPU (HTP). QAIRT 2.45.
+- **Measured on-device (float), 2026-09-08** — see `benchmarks/results.md`:
+
+  | Stage | Model | Latency | NPU | CPU ops |
+  |---|---|---:|---|---:|
+  | face detect + landmarks | `mediapipe_face` | 0.6 ms | 100% | 0 |
+  | person segmentation | `mediapipe_selfie` | 0.4 ms | 100% | 0 |
+  | super-resolution | `quicksrnetmedium` | 0.5 ms | 100% | 0 |
+  | **pipeline** | | **1.5 ms** | **100%** | **0** |
+
+  → **22× under the 33 ms / 30 fps budget**; every op on the NPU, zero CPU fallback.
+- Accuracy: on-device vs local-CPU landmark PSNR ≈ 75 dB (float, effectively lossless).
+- Quantisation: INT8 (w8a8) for segmentation → 0.2 ms, **2× faster than float**, still
+  100% NPU. face + SR INT8 pending calibration-dataset access (see results.md notes).
+- TODO before submission: re-export at real capture resolution (720p) with `--height/--width`;
+  measured concurrent per-frame wall-time in the app; NPU-vs-CPU-EP delta on the same device;
+  native ARM64 build with `session.get_providers()` + ORT trace showing no fallback.
 
 ## 2. Application Use Case & Innovation
 - Problem: video-call quality on thin-and-light PCs and poor connectivity in India.

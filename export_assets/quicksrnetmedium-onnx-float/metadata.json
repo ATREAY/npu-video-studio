@@ -1,0 +1,49 @@
+{
+    "model_id": "quicksrnetmedium",
+    "model_name": "QuickSRNetMedium",
+    "runtime": "onnx",
+    "precision": "float",
+    "tool_versions": {
+        "qairt": "2.45.0.260326154327",
+        "onnx_runtime": "1.27.1"
+    },
+    "model_files": {
+        "quicksrnetmedium.onnx": {
+            "inputs": {
+                "image": {
+                    "shape": [
+                        1,
+                        3,
+                        128,
+                        128
+                    ],
+                    "dtype": "float32",
+                    "io_type": "image",
+                    "image_metadata": {},
+                    "value_range": [
+                        0.0,
+                        1.0
+                    ]
+                }
+            },
+            "outputs": {
+                "upscaled_image": {
+                    "shape": [
+                        1,
+                        3,
+                        512,
+                        512
+                    ],
+                    "dtype": "float32",
+                    "io_type": "image",
+                    "image_metadata": {},
+                    "value_range": [
+                        0.0,
+                        1.0
+                    ]
+                }
+            }
+        }
+    },
+    "use_case": "Super Resolution"
+}
