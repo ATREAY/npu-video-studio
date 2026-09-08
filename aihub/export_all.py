@@ -32,14 +32,20 @@ _NPU = re.compile(r"NPU.*?:\s*([\d.]+)", re.I)
 _JOB = re.compile(r"(https://\S*aihub\.qualcomm\.com/\S+)", re.I)
 
 
-def run_one(role: str, module: str, device: str, runtime: str) -> dict:
+def run_one(role: str, module: str, device: str, runtime: str,
+            precision: str = "float") -> dict:
     RAW.mkdir(parents=True, exist_ok=True)
-    log_path = RAW / f"{role}.log"
+    tag = precision.replace("a", "a").replace("w8a8", "w8a8")
+    log_path = RAW / f"{role}.{device.replace(' ', '_')}.{precision}.log"
     cmd = [
         sys.executable, "-m", f"qai_hub_models.models.{module}.export",
         "--device", device,
-        "--target-runtime", runtime,
+        "--target-runtime", runtime,       # onnx -> ONNX Runtime + QNN EP on Windows-on-ARM
     ]
+    if precision == "w8a8":
+        cmd += ["--quantize", "w8a8"]
+    else:
+        cmd += ["--precision", "float"]
     print(f"\n=== {role}: {' '.join(cmd)}")
     proc = subprocess.run(cmd, capture_output=True, text=True)
     out = proc.stdout + "\n" + proc.stderr
@@ -96,6 +102,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--device", default=config.DEVICE)
     ap.add_argument("--runtime", default=config.TARGET_RUNTIME)
+    ap.add_argument("--precision", default="float", choices=["float", "w8a8"],
+                    help="float baseline, or w8a8 INT8 quantized")
     ap.add_argument("--only", nargs="*", help="subset of roles, e.g. --only superres segment")
     args = ap.parse_args()
 
@@ -103,11 +111,13 @@ def main() -> int:
     if args.only:
         items = [(k, v) for k, v in items if k in args.only]
 
-    print(f"device   : {args.device}")
-    print(f"runtime  : {args.runtime}")
-    print(f"models   : {[k for k, _ in items]}")
+    print(f"device    : {args.device}")
+    print(f"runtime   : {args.runtime}")
+    print(f"precision : {args.precision}")
+    print(f"models    : {[k for k, _ in items]}")
 
-    rows = [run_one(role, module, args.device, args.runtime) for role, module in items]
+    rows = [run_one(role, module, args.device, args.runtime, args.precision)
+            for role, module in items]
     write_results(args.device, rows)
     return 0 if all(r["ok"] for r in rows) else 1
 
