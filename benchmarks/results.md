@@ -12,8 +12,9 @@ Budget: sum of stage latencies **< 33 ms** for 30 fps, **100% NPU** per model (n
 |-------|-------|-----------:|-----------------:|-----|--------:|
 | 1 face detect + landmarks | `mediapipe_face` (2 comp, 256²+192²) | **0.6** | pending¹ | 100% | 0 |
 | 2 person segmentation     | `mediapipe_selfie` (256²)            | **0.4** | **0.2** | 100% | 0 |
+| 3 low-light enhancement   | `zero_dce` (BYO, 256²)               | **1.4** | — | 100% (56 layers) | 0 |
 | 4 super-resolution        | `quicksrnetmedium` (128²→4×→512²)    | **0.5** | pending² | 100% | 0 |
-| **Pipeline total**        |                                     | **1.5** | — | **100%** | **0** |
+| **Pipeline total**        |                                     | **2.9** | — | **100%** | **0** |
 
 ### At realistic capture resolution (video-call scenario)
 
@@ -21,12 +22,13 @@ Budget: sum of stage latencies **< 33 ms** for 30 fps, **100% NPU** per model (n
 |-------|--------|-----------:|-----|
 | face | fixed 256²/192² input | 0.6 | 100% |
 | segment | 256² (matte upsampled to frame) — already representative | 0.4 | 100% |
-| low-light | Zero-DCE (BYO), 256² | pending³ | — |
+| low-light | Zero-DCE (BYO), 256², 56 layers, ~4 MB inference mem | **1.4** | 100% |
 | super-resolution | **640×360 → 2× → 1280×720** (upscale a 360p stream) | **3.4** | 100% (19 ops) |
 | super-resolution | 320×180 → 4× → 1280×720 (upscale a 180p stream) | **1.5** | 100% (19 ops), 33 MB peak |
-| **realistic pipeline** | face + segment + low-light + SR@720p | **≈4.5–6** | **100%** |
+| **realistic pipeline** | face + segment + low-light + SR@720p(2×) | **≈5.8** | **100%** |
+| **realistic pipeline** | face + segment + low-light + SR@720p(4×) | **≈3.9** | **100%** |
 
-**Realistic float pipeline ≈ 4.5–6 ms → 5–7× under the 33 ms / 30 fps budget; 60 fps is comfortably feasible.**
+**Realistic float pipeline 3.9–5.8 ms → 6–8× under the 33 ms / 30 fps budget; ~170 fps theoretical headroom. Every stage 100% on the NPU, zero CPU ops.**
 Every op on the NPU, zero CPU fallback. Landmark on-device-vs-CPU PSNR ≈ 75 dB (lossless).
 
 ### NPU vs CPU (same compiled ONNX, ONNX Runtime)
