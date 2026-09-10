@@ -74,8 +74,11 @@ def build(weights: str | None) -> ZeroDCE:
 def to_onnx(net: ZeroDCE, h: int, w: int, path: pathlib.Path) -> pathlib.Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     dummy = torch.rand(1, 3, h, w)
+    # dynamo=False -> the legacy TorchScript exporter: compact graph, no Split-op /
+    # opset-conversion pathologies. Zero-DCE predicts smooth tone curves so a small
+    # fixed input (they upsample fine) keeps CPU-fallback cost low.
     torch.onnx.export(net, dummy, path.as_posix(), input_names=["image"],
-                      output_names=["enhanced"], opset_version=17)
+                      output_names=["enhanced"], opset_version=17, dynamo=False)
     print(f"onnx -> {path}  ({path.stat().st_size / 1e3:.0f} KB)  input {h}x{w}")
     return path
 
@@ -101,8 +104,8 @@ def main() -> int:
     ap.add_argument("--device", default=config.DEVICE)
     ap.add_argument("--runtime", default=config.TARGET_RUNTIME)
     ap.add_argument("--weights", default=None, help="path to Epoch99.pth (auto-download if omitted)")
-    ap.add_argument("--height", type=int, default=360)
-    ap.add_argument("--width", type=int, default=640)
+    ap.add_argument("--height", type=int, default=256, help="fixed input H (curves upsample)")
+    ap.add_argument("--width", type=int, default=256, help="fixed input W")
     ap.add_argument("--onnx-only", action="store_true", help="export ONNX, skip AI Hub")
     args = ap.parse_args()
 
