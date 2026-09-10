@@ -1,0 +1,569 @@
+
+Qualcomm AI Hub Workbenchaihub-2026.08.28.1:˛¯
+ﬂ
+image
+model.cnn.0.weight
+model.cnn.0.biasconv2dnode_conv2d"Conv*
+group†*
+pads@@@@†*
+auto_pad"NOTSET†*
+strides@@†*
+	dilations@@†JÇ
+	namespaceÙ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.0: torch.nn.modules.conv.Conv2d/conv2d: aten.conv2d.defaultJ˛
+pkg.torch.onnx.class_hierarchy€['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']J¬
+pkg.torch.onnx.fx_nodeß%conv2d : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%image, %p_model_cnn_0_weight, %p_model_cnn_0_bias, [1, 1], [1, 1]), kwargs = {})JQ
+pkg.torch.onnx.name_scopes3['', 'model', 'model.cnn', 'model.cnn.0', 'conv2d']Jò
+pkg.torch.onnx.stack_trace˘File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 553, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+Î
+conv2d
+min_val_cast
+max_val_casthardtanhn4"ClipJé
+	namespaceÄ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.1: torch.nn.modules.activation.Hardtanh/hardtanh: aten.hardtanh.defaultJà
+pkg.torch.onnx.class_hierarchyÂ['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.Hardtanh', 'aten.hardtanh.default']Jî
+pkg.torch.onnx.fx_nodez%hardtanh : [num_users=1] = call_function[target=torch.ops.aten.hardtanh.default](args = (%conv2d, 0.0, 1.0), kwargs = {})JS
+pkg.torch.onnx.name_scopes5['', 'model', 'model.cnn', 'model.cnn.1', 'hardtanh']J®
+pkg.torch.onnx.stack_traceâFile "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/activation.py", line 291, in forward
+    return F.hardtanh(input, self.min_val, self.max_val, self.inplace)
+Ô
+hardtanh
+model.cnn.2.weight
+model.cnn.2.biasconv2d_1node_conv2d_1"Conv*
+group†*
+pads@@@@†*
+auto_pad"NOTSET†*
+strides@@†*
+	dilations@@†JÑ
+	namespaceˆ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.2: torch.nn.modules.conv.Conv2d/conv2d_1: aten.conv2d.defaultJ˛
+pkg.torch.onnx.class_hierarchy€['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']J«
+pkg.torch.onnx.fx_node¨%conv2d_1 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%hardtanh, %p_model_cnn_2_weight, %p_model_cnn_2_bias, [1, 1], [1, 1]), kwargs = {})JS
+pkg.torch.onnx.name_scopes5['', 'model', 'model.cnn', 'model.cnn.2', 'conv2d_1']Jò
+pkg.torch.onnx.stack_trace˘File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 553, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+˘
+conv2d_1
+min_val_cast
+max_val_cast
+hardtanh_1n4_2"ClipJê
+	namespaceÇ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.3: torch.nn.modules.activation.Hardtanh/hardtanh_1: aten.hardtanh.defaultJà
+pkg.torch.onnx.class_hierarchyÂ['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.Hardtanh', 'aten.hardtanh.default']Jò
+pkg.torch.onnx.fx_node~%hardtanh_1 : [num_users=1] = call_function[target=torch.ops.aten.hardtanh.default](args = (%conv2d_1, 0.0, 1.0), kwargs = {})JU
+pkg.torch.onnx.name_scopes7['', 'model', 'model.cnn', 'model.cnn.3', 'hardtanh_1']J®
+pkg.torch.onnx.stack_traceâFile "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/activation.py", line 291, in forward
+    return F.hardtanh(input, self.min_val, self.max_val, self.inplace)
+Û
+
+hardtanh_1
+model.cnn.4.weight
+model.cnn.4.biasconv2d_2node_conv2d_2"Conv*
+group†*
+pads@@@@†*
+auto_pad"NOTSET†*
+strides@@†*
+	dilations@@†JÑ
+	namespaceˆ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.4: torch.nn.modules.conv.Conv2d/conv2d_2: aten.conv2d.defaultJ˛
+pkg.torch.onnx.class_hierarchy€['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']J…
+pkg.torch.onnx.fx_nodeÆ%conv2d_2 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%hardtanh_1, %p_model_cnn_4_weight, %p_model_cnn_4_bias, [1, 1], [1, 1]), kwargs = {})JS
+pkg.torch.onnx.name_scopes5['', 'model', 'model.cnn', 'model.cnn.4', 'conv2d_2']Jò
+pkg.torch.onnx.stack_trace˘File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 553, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+˘
+conv2d_2
+min_val_cast
+max_val_cast
+hardtanh_2n4_3"ClipJê
+	namespaceÇ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.5: torch.nn.modules.activation.Hardtanh/hardtanh_2: aten.hardtanh.defaultJà
+pkg.torch.onnx.class_hierarchyÂ['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.Hardtanh', 'aten.hardtanh.default']Jò
+pkg.torch.onnx.fx_node~%hardtanh_2 : [num_users=1] = call_function[target=torch.ops.aten.hardtanh.default](args = (%conv2d_2, 0.0, 1.0), kwargs = {})JU
+pkg.torch.onnx.name_scopes7['', 'model', 'model.cnn', 'model.cnn.5', 'hardtanh_2']J®
+pkg.torch.onnx.stack_traceâFile "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/activation.py", line 291, in forward
+    return F.hardtanh(input, self.min_val, self.max_val, self.inplace)
+Û
+
+hardtanh_2
+model.cnn.6.weight
+model.cnn.6.biasconv2d_3node_conv2d_3"Conv*
+group†*
+pads@@@@†*
+auto_pad"NOTSET†*
+strides@@†*
+	dilations@@†JÑ
+	namespaceˆ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.6: torch.nn.modules.conv.Conv2d/conv2d_3: aten.conv2d.defaultJ˛
+pkg.torch.onnx.class_hierarchy€['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']J…
+pkg.torch.onnx.fx_nodeÆ%conv2d_3 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%hardtanh_2, %p_model_cnn_6_weight, %p_model_cnn_6_bias, [1, 1], [1, 1]), kwargs = {})JS
+pkg.torch.onnx.name_scopes5['', 'model', 'model.cnn', 'model.cnn.6', 'conv2d_3']Jò
+pkg.torch.onnx.stack_trace˘File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 553, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+˘
+conv2d_3
+min_val_cast
+max_val_cast
+hardtanh_3n4_4"ClipJê
+	namespaceÇ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.7: torch.nn.modules.activation.Hardtanh/hardtanh_3: aten.hardtanh.defaultJà
+pkg.torch.onnx.class_hierarchyÂ['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.Hardtanh', 'aten.hardtanh.default']Jò
+pkg.torch.onnx.fx_node~%hardtanh_3 : [num_users=1] = call_function[target=torch.ops.aten.hardtanh.default](args = (%conv2d_3, 0.0, 1.0), kwargs = {})JU
+pkg.torch.onnx.name_scopes7['', 'model', 'model.cnn', 'model.cnn.7', 'hardtanh_3']J®
+pkg.torch.onnx.stack_traceâFile "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/activation.py", line 291, in forward
+    return F.hardtanh(input, self.min_val, self.max_val, self.inplace)
+Û
+
+hardtanh_3
+model.cnn.8.weight
+model.cnn.8.biasconv2d_4node_conv2d_4"Conv*
+group†*
+pads@@@@†*
+auto_pad"NOTSET†*
+strides@@†*
+	dilations@@†JÑ
+	namespaceˆ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.8: torch.nn.modules.conv.Conv2d/conv2d_4: aten.conv2d.defaultJ˛
+pkg.torch.onnx.class_hierarchy€['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']J…
+pkg.torch.onnx.fx_nodeÆ%conv2d_4 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%hardtanh_3, %p_model_cnn_8_weight, %p_model_cnn_8_bias, [1, 1], [1, 1]), kwargs = {})JS
+pkg.torch.onnx.name_scopes5['', 'model', 'model.cnn', 'model.cnn.8', 'conv2d_4']Jò
+pkg.torch.onnx.stack_trace˘File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 553, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+˘
+conv2d_4
+min_val_cast
+max_val_cast
+hardtanh_4n4_5"ClipJê
+	namespaceÇ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.9: torch.nn.modules.activation.Hardtanh/hardtanh_4: aten.hardtanh.defaultJà
+pkg.torch.onnx.class_hierarchyÂ['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.Hardtanh', 'aten.hardtanh.default']Jò
+pkg.torch.onnx.fx_node~%hardtanh_4 : [num_users=1] = call_function[target=torch.ops.aten.hardtanh.default](args = (%conv2d_4, 0.0, 1.0), kwargs = {})JU
+pkg.torch.onnx.name_scopes7['', 'model', 'model.cnn', 'model.cnn.9', 'hardtanh_4']J®
+pkg.torch.onnx.stack_traceâFile "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/activation.py", line 291, in forward
+    return F.hardtanh(input, self.min_val, self.max_val, self.inplace)
+˘
+
+hardtanh_4
+model.cnn.10.weight
+model.cnn.10.biasconv2d_5node_conv2d_5"Conv*
+group†*
+pads@@@@†*
+auto_pad"NOTSET†*
+strides@@†*
+	dilations@@†JÖ
+	namespace˜: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.10: torch.nn.modules.conv.Conv2d/conv2d_5: aten.conv2d.defaultJ˛
+pkg.torch.onnx.class_hierarchy€['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']JÀ
+pkg.torch.onnx.fx_node∞%conv2d_5 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%hardtanh_4, %p_model_cnn_10_weight, %p_model_cnn_10_bias, [1, 1], [1, 1]), kwargs = {})JT
+pkg.torch.onnx.name_scopes6['', 'model', 'model.cnn', 'model.cnn.10', 'conv2d_5']Jò
+pkg.torch.onnx.stack_trace˘File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 553, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+˚
+conv2d_5
+min_val_cast
+max_val_cast
+hardtanh_5n4_6"ClipJë
+	namespaceÉ: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.cnn: torch.nn.modules.container.Sequential/model.cnn.11: torch.nn.modules.activation.Hardtanh/hardtanh_5: aten.hardtanh.defaultJà
+pkg.torch.onnx.class_hierarchyÂ['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.container.Sequential', 'torch.nn.modules.activation.Hardtanh', 'aten.hardtanh.default']Jò
+pkg.torch.onnx.fx_node~%hardtanh_5 : [num_users=1] = call_function[target=torch.ops.aten.hardtanh.default](args = (%conv2d_5, 0.0, 1.0), kwargs = {})JV
+pkg.torch.onnx.name_scopes8['', 'model', 'model.cnn', 'model.cnn.11', 'hardtanh_5']J®
+pkg.torch.onnx.stack_traceâFile "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 279, in forward
+    x = self.cnn(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/activation.py", line 291, in forward
+    return F.hardtanh(input, self.min_val, self.max_val, self.inplace)
+¸
+
+hardtanh_5
+model.conv_last.weight
+model.conv_last.biasconv2d_6node_conv2d_6"Conv*
+group†*
+pads@@@@†*
+auto_pad"NOTSET†*
+strides@@†*
+	dilations@@†J◊
+	namespace…: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.conv_last: torch.nn.modules.conv.Conv2d/conv2d_6: aten.conv2d.defaultJ’
+pkg.torch.onnx.class_hierarchy≤['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.conv.Conv2d', 'aten.conv2d.default']J—
+pkg.torch.onnx.fx_node∂%conv2d_6 : [num_users=1] = call_function[target=torch.ops.aten.conv2d.default](args = (%hardtanh_5, %p_model_conv_last_weight, %p_model_conv_last_bias, [1, 1], [1, 1]), kwargs = {})JJ
+pkg.torch.onnx.name_scopes,['', 'model', 'model.conv_last', 'conv2d_6']J
+pkg.torch.onnx.stack_trace—File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 289, in forward
+    x = self.conv_last(x)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 553, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+¯
+
+conv2d_6
+min_val_cast
+max_val_cast
+hardtanh_6n4_7"ClipJÂ
+	namespace◊: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.clip_output: torch.nn.modules.activation.Hardtanh/hardtanh_6: aten.hardtanh.defaultJﬂ
+pkg.torch.onnx.class_hierarchyº['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.activation.Hardtanh', 'aten.hardtanh.default']Jò
+pkg.torch.onnx.fx_node~%hardtanh_6 : [num_users=1] = call_function[target=torch.ops.aten.hardtanh.default](args = (%conv2d_6, 0.0, 1.0), kwargs = {})JN
+pkg.torch.onnx.name_scopes0['', 'model', 'model.clip_output', 'hardtanh_6']JÇ
+pkg.torch.onnx.stack_trace„File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 291, in forward
+    x = self.clip_output(x)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/activation.py", line 291, in forward
+    return F.hardtanh(input, self.min_val, self.max_val, self.inplace)
+∑
+
+hardtanh_6upscaled_imagenode_pixel_shuffle"DepthToSpace*
+mode"CRD†*
+	blocksize†Jˆ
+	namespaceË: qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium/model: aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase/model.depth_to_space: torch.nn.modules.pixelshuffle.PixelShuffle/pixel_shuffle: aten.pixel_shuffle.defaultJÍ
+pkg.torch.onnx.class_hierarchy«['qai_hub_models.models.quicksrnetmedium.model.QuickSRNetMedium', 'aimet_zoo_torch.quicksrnet.model.models.QuickSRNetBase', 'torch.nn.modules.pixelshuffle.PixelShuffle', 'aten.pixel_shuffle.default']Jú
+pkg.torch.onnx.fx_nodeÅ%pixel_shuffle : [num_users=1] = call_function[target=torch.ops.aten.pixel_shuffle.default](args = (%hardtanh_6, 2), kwargs = {})JT
+pkg.torch.onnx.name_scopes6['', 'model', 'model.depth_to_space', 'pixel_shuffle']J˘
+pkg.torch.onnx.stack_trace⁄File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/qai_hub_models/models/_shared/super_resolution/model.py", line 79, in forward
+    return self.model(image)
+  File "/u/student/2025/cs25mtech14023/.qaihm/qai-hub-models/models/aimet_zoo/v1/quic_aimet-model-zoo_git/aimet_zoo_torch/quicksrnet/model/models.py", line 293, in forward
+    return self.depth_to_space(x)
+  File "/u/student/2025/cs25mtech14023/npu-video-studio/.venv/lib/python3.11/site-packages/torch/nn/modules/pixelshuffle.py", line 62, in forward
+    return F.pixel_shuffle(input, self.upscale_factor)
+main_graph*U Bmodel.cnn.0.weightj
+location
+model.dataj
+offset0j
+length3456p*ô Bmodel.cnn.0.biasJÄ5QΩZq;πç§ΩìÚ(∫@NÜ=[~•∫∑
+?º†éo∫T5]<∂hÀ8ó=B_â∏È#ºKªÍæÃ,Uºàã=lé∫fP8ªﬁ)Ωrº–∞¯∫ê"9«Rª0Œì∫ˆ“K;Ë,º‡Ωæ5Vêª…◊õ;As,<5%≥πÉÌ=*ô Bmodel.cnn.2.biasJÄ° Y=%!∫∂é¥=;¥=;*0<Ùâº˝‹Æª	zªŸÁÖ:^€;^·«;π‹+∫¯aº·Œ∫Ωr]HºËóº8”4;Ïƒ º©Z@º>Óë;Ì#qæâU<ú¥º”Ãˆ:»Êª<÷7ˇ:òïLæqÜË∫√w≥<äÜ…º¬‚Ÿº*ô Bmodel.cnn.4.biasJÄ‰P•:—
+:#.;“Œ@º(Ùpª·©Ÿ:arP:ÔD¥ª0Âº÷¥çªÍ]ºÁkaºæ1ñ<È=}ûù<BÜ5ºÑ;ôXRªk]úºn#2<-“qºÅπº©~x∫E»á∫—áπ_”ï<◊ÍR<QÉªÑQ¬;>81<x€ªéÊÃ∫*ô Bmodel.cnn.6.biasJÄ∞Jû;äÅ7’RSª≤˙Å;≠úZº¢7ÔºÍÄ∫E˛;Ωn<\∫êªﬂKi;[[
+ºÀ˘ú;|Ó§;Án∏ÓwøªîÈµº4Óz;¿§Øπ|ˆ=ºTÔMøM‹
+<mÜ+º0∆ºFäºmÂÇº+“¨;Ç4 ºXWû;AUõ∏q€∫5º*ô Bmodel.cnn.8.biasJÄf@ıª
+∑jª6Å{ªRÆ*º
+)g;¯2ãºë•ë;¡Vïª)Î9ëúƒª˛≤ï:«4aº/8FºãñºÓp0:,yº9/hº∂Êk;àDºødºw¬<w©∫Ñÿº˝épº<Û:¬∫êªIp;Fr:íì§;HÜùº¢¬ 9Ö¡±º*ö Bmodel.cnn.10.biasJÄf¸æªé–ª	πS®»ª+¯Œ∫∆0|ª¢ñhº#Ñª@Dª£Zª	˛äª`·,ªª!≠ª“6≠ªôõ∫ˆœæ:N∞©ª©ˇP∫àZRª÷©	ªGÕRªgüßªK|˜ªÿÙjªÁ«vªËùhªÇGe∫œ-`∫›
+Ï:Ôr º¯0ª_¶ª*LBmodel.conv_last.biasJ0Ì±ÿ5˛˘ ∏8Á`8ô¬∑PÆ/∑û,Q8b6¬Ω#8◊8Wjß∑ô(N∑Ñyú∑*Bmin_val_castJ    *Bmax_val_castJ  Ä?*Y  Bmodel.cnn.2.weightj
+location
+model.dataj
+offset3456j
+length36864p*Z  Bmodel.cnn.4.weightj
+location
+model.dataj
+offset40320j
+length36864p*Z  Bmodel.cnn.6.weightj
+location
+model.dataj
+offset77184j
+length36864p*[  Bmodel.cnn.8.weightj
+location
+model.dataj
+offset114048j
+length36864p*\  Bmodel.cnn.10.weightj
+location
+model.dataj
+offset150912j
+length36864p*_ Bmodel.conv_last.weightj
+location
+model.dataj
+offset187776j
+length13824pZü
+image
+
+
+
+Ë
+Ä"=
+/pkg.torch.export.graph_signature.InputSpec.kind
+USER_INPUT"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNonebk
+upscaled_image
+
+
+
+–
+Ä
+"?
+0pkg.torch.export.graph_signature.OutputSpec.kindUSER_OUTPUTj‰
+model.cnn.0.weight
+
+ 
+
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"9
+!pkg.torch.onnx.original_node_namep_model_cnn_0_weightj‘
+model.cnn.0.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"7
+!pkg.torch.onnx.original_node_namep_model_cnn_0_biasj‘
+model.cnn.2.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"7
+!pkg.torch.onnx.original_node_namep_model_cnn_2_biasj‘
+model.cnn.4.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"7
+!pkg.torch.onnx.original_node_namep_model_cnn_4_biasj‘
+model.cnn.6.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"7
+!pkg.torch.onnx.original_node_namep_model_cnn_6_biasj‘
+model.cnn.8.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"7
+!pkg.torch.onnx.original_node_namep_model_cnn_8_biasj÷
+model.cnn.10.bias
+
+
+ "<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"8
+!pkg.torch.onnx.original_node_namep_model_cnn_10_biasj‹
+model.conv_last.bias
+
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone";
+!pkg.torch.onnx.original_node_namep_model_conv_last_biasjK
+min_val_cast
+ "3
+$pkg.onnxscript.optimizer.folded_from['min_val']jK
+max_val_cast
+ "3
+$pkg.onnxscript.optimizer.folded_from['max_val']j‰
+model.cnn.2.weight
+
+ 
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"9
+!pkg.torch.onnx.original_node_namep_model_cnn_2_weightj‰
+model.cnn.4.weight
+
+ 
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"9
+!pkg.torch.onnx.original_node_namep_model_cnn_4_weightj‰
+model.cnn.6.weight
+
+ 
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"9
+!pkg.torch.onnx.original_node_namep_model_cnn_6_weightj‰
+model.cnn.8.weight
+
+ 
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"9
+!pkg.torch.onnx.original_node_namep_model_cnn_8_weightjÊ
+model.cnn.10.weight
+
+ 
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone":
+!pkg.torch.onnx.original_node_namep_model_cnn_10_weightjÏ
+model.conv_last.weight
+
+
+ 
+
+"<
+/pkg.torch.export.graph_signature.InputSpec.kind	PARAMETER"=
+5pkg.torch.export.graph_signature.InputSpec.persistentNone"=
+!pkg.torch.onnx.original_node_namep_model_conv_last_weightj"
+conv2d
+
+
+ 
+Ë
+Äj$
+hardtanh
+
+
+ 
+Ë
+Äj$
+conv2d_1
+
+
+ 
+Ë
+Äj&
+
+hardtanh_1
+
+
+ 
+Ë
+Äj$
+conv2d_2
+
+
+ 
+Ë
+Äj&
+
+hardtanh_2
+
+
+ 
+Ë
+Äj$
+conv2d_3
+
+
+ 
+Ë
+Äj&
+
+hardtanh_3
+
+
+ 
+Ë
+Äj$
+conv2d_4
+
+
+ 
+Ë
+Äj&
+
+hardtanh_4
+
+
+ 
+Ë
+Äj$
+conv2d_5
+
+
+ 
+Ë
+Äj&
+
+hardtanh_5
+
+
+ 
+Ë
+Äj$
+conv2d_6
+
+
+
+Ë
+Äj&
+
+hardtanh_6
+
+
+
+Ë
+ÄÇ∑
+0pkg.torch.export.ExportedProgram.graph_signatureÇ
+# inputs
+p_model_cnn_0_weight: PARAMETER target='model.cnn.0.weight'
+p_model_cnn_0_bias: PARAMETER target='model.cnn.0.bias'
+p_model_cnn_2_weight: PARAMETER target='model.cnn.2.weight'
+p_model_cnn_2_bias: PARAMETER target='model.cnn.2.bias'
+p_model_cnn_4_weight: PARAMETER target='model.cnn.4.weight'
+p_model_cnn_4_bias: PARAMETER target='model.cnn.4.bias'
+p_model_cnn_6_weight: PARAMETER target='model.cnn.6.weight'
+p_model_cnn_6_bias: PARAMETER target='model.cnn.6.bias'
+p_model_cnn_8_weight: PARAMETER target='model.cnn.8.weight'
+p_model_cnn_8_bias: PARAMETER target='model.cnn.8.bias'
+p_model_cnn_10_weight: PARAMETER target='model.cnn.10.weight'
+p_model_cnn_10_bias: PARAMETER target='model.cnn.10.bias'
+p_model_conv_last_weight: PARAMETER target='model.conv_last.weight'
+p_model_conv_last_bias: PARAMETER target='model.conv_last.bias'
+image: USER_INPUT
+
+# outputs
+pixel_shuffle: USER_OUTPUT
+Ç8
+2pkg.torch.export.ExportedProgram.range_constraints{}B
+ r
+source_model_type.pt2

@@ -50,7 +50,17 @@ class Sink:
         self._n = 0
         self._dir = None
         if spec == "virtualcam":
-            import pyvirtualcam  # optional; raises here if not installed
+            try:
+                import pyvirtualcam
+            except ImportError as e:
+                raise SystemExit(
+                    "virtualcam output needs `pip install pyvirtualcam` plus a loopback "
+                    "device:\n"
+                    "  Windows  - OBS Studio (Start Virtual Camera) or Unity Capture\n"
+                    "  macOS    - OBS Studio virtual camera\n"
+                    "  Linux    - `sudo modprobe v4l2loopback`\n"
+                    "Use --out out.mp4 to render a file instead."
+                ) from e
             self._pvc_mod = pyvirtualcam
         elif spec.endswith(".mp4") or spec.endswith(".avi"):
             self._path = spec

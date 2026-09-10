@@ -50,17 +50,33 @@ class SegmentStage:
 
 
 # --------------------------------------------------------------------------- #
+def _find_onnx(asset: str) -> pathlib.Path:
+    """Locate the .onnx inside an export_assets subdir (flat or job_*/model.onnx)."""
+    d = ASSETS / asset
+    hits = sorted(d.rglob("*.onnx"))
+    if not hits:
+        raise FileNotFoundError(f"no .onnx under {d}")
+    # prefer a top-level file, else the nested optimized one
+    return next((h for h in hits if h.parent == d), hits[0])
+
+
 class SuperResStage:
-    """Upscale a low-res frame. Model is fixed-scale (from the compiled asset)."""
+    """Upscale a frame. Fixed input size + scale come from the compiled asset.
+
+    asset "quicksrnetmedium-onnx-float"       -> 128->512  (4x, toy)
+    asset "quicksrnetmedium-onnx-float-2x360" -> 640x360 -> 1280x720 (2x, realistic)
+    """
     name = "superres"
 
     def __init__(self, asset: str = "quicksrnetmedium-onnx-float", prefer: str = "auto",
                  every_n: int = 1):
-        self.s = Session(ASSETS / asset / "quicksrnetmedium.onnx", prefer)
-        _, _, self.h, self.w = self.s.input_shapes["image"]
-        _, _, oh, ow = [d if isinstance(d, int) else 0
-                        for d in self.s.sess.get_outputs()[0].shape]
+        self.s = Session(_find_onnx(asset), prefer)
+        in_name = self.s.input_names[0]
+        _, _, self.h, self.w = self.s.input_shapes[in_name]
+        oshape = self.s.sess.get_outputs()[0].shape
+        oh = oshape[2] if isinstance(oshape[2], int) else 0
         self.scale = (oh // self.h) if oh else 4
+        self.asset = asset
         self.every_n = max(1, every_n)
         self._i = 0
         self._cache: np.ndarray | None = None
@@ -89,13 +105,17 @@ class LowLightStage:
     """
     name = "lowlight"
 
+    _DEFAULT = ASSETS / "zero_dce" / "zero_dce.onnx"
+
     def __init__(self, model_onnx: str | None = None, prefer: str = "auto",
                  luma_gate: float = 110.0):
         self.luma_gate = luma_gate
         self.s: Session | None = None
-        if model_onnx and pathlib.Path(model_onnx).exists():
-            self.s = Session(model_onnx, prefer)
+        path = model_onnx or (str(self._DEFAULT) if self._DEFAULT.exists() else None)
+        if path and pathlib.Path(path).exists():
+            self.s = Session(path, prefer)
             _, _, self.h, self.w = self.s.input_shapes[self.s.input_names[0]]
+        self.backend = "zero-dce" if self.s is not None else "clahe"
         self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         self.last_ms = 0.0
 
@@ -120,39 +140,82 @@ class LowLightStage:
 
 
 # --------------------------------------------------------------------------- #
-def _ssd_anchors(input_size: int = 256,
-                 strides: tuple[int, ...] = (16, 32),
-                 counts: tuple[int, ...] = (2, 6)) -> np.ndarray:
-    """MediaPipe BlazeFace back-camera anchor grid -> (N, 2) normalised centres."""
+# MediaPipe BlazeFace back-camera anchor grid, normalised (x_c, y_c). 16x16x2 + 8x8x6.
+_ANCHOR_FILES = [
+    pathlib.Path.home() / ".qaihm/external_repos/shared/mediapipe/mediapipe",
+    pathlib.Path.home() / ".qaihm/qai-hub-models/models/mediapipe_pytorch/v1/zmurez_MediaPipePyTorch_git",
+]
+# box expansion so the crop encloses the whole face (DETECT_DSCALE in the reference)
+_DETECT_DSCALE = 1.1
+
+
+def _load_face_anchors() -> np.ndarray:
+    for base in _ANCHOR_FILES:
+        for f in base.rglob("anchors_face_back.npy"):
+            return np.load(f)[:, :2]                       # (896, 2) centres
+    # fallback: reconstruct the grid (verified identical to the file)
     out = []
-    for stride, k in zip(strides, counts):
-        g = input_size // stride
+    for g, k in ((16, 2), (8, 6)):
         cy, cx = np.mgrid[0:g, 0:g]
-        cx = (cx + 0.5) / g
-        cy = (cy + 0.5) / g
-        centres = np.stack([cx, cy], -1).reshape(-1, 2)
-        out.append(np.repeat(centres, k, axis=0))
-    return np.concatenate(out, 0)                         # (896, 2)
+        c = np.stack([(cx + 0.5) / g, (cy + 0.5) / g], -1).reshape(-1, 2)
+        out.append(np.repeat(c, k, axis=0))
+    return np.concatenate(out, 0)
+
+
+def _nms(boxes: np.ndarray, scores: np.ndarray, iou_thr: float = 0.3) -> list[int]:
+    if len(boxes) == 0:
+        return []
+    x0, y0, x1, y1 = boxes.T
+    area = np.maximum(0, x1 - x0) * np.maximum(0, y1 - y0)
+    order = scores.argsort()[::-1]
+    keep = []
+    while order.size:
+        i = order[0]
+        keep.append(int(i))
+        xx0 = np.maximum(x0[i], x0[order[1:]])
+        yy0 = np.maximum(y0[i], y0[order[1:]])
+        xx1 = np.minimum(x1[i], x1[order[1:]])
+        yy1 = np.minimum(y1[i], y1[order[1:]])
+        inter = np.maximum(0, xx1 - xx0) * np.maximum(0, yy1 - yy0)
+        iou = inter / (area[i] + area[order[1:]] - inter + 1e-9)
+        order = order[1:][iou <= iou_thr]
+    return keep
 
 
 class FaceStage:
-    """Face detection + 468 landmarks. Drives auto-framing / eye-contact.
+    """Face detection (BlazeFace-back) + 468 landmarks. Drives framing / eye-contact.
 
-    Single-face (largest foreground subject) — matches the video-call use case.
-    Multi-face + full NMS: TODO. Returns dict with 'box' (x0,y0,x1,y1 px),
-    'landmarks' (468,2 px) or None.
+    Decode validated bit-exact against qai_hub_models' reference. Returns the
+    highest-scoring face as a dict {box (x0,y0,x1,y1 px), landmarks (468,2 px)|None,
+    eyes ((lx,ly),(rx,ry) px), score}, or None. `all_boxes` also kept for multi-face.
     """
     name = "face"
 
-    def __init__(self, prefer: str = "auto", min_score: float = 0.6):
+    def __init__(self, prefer: str = "auto", min_score: float = 0.6, nms_iou: float = 0.3):
         base = ASSETS / "mediapipe_face-onnx-float"
         self.det = Session(base / "face_detector.onnx", prefer)
         self.lm = Session(base / "face_landmark_detector.onnx", prefer)
         _, _, self.dh, self.dw = self.det.input_shapes["image"]
         _, _, self.lh, self.lw = self.lm.input_shapes["image"]
-        self.anchors = _ssd_anchors(self.dw)
+        self.anchors = _load_face_anchors()               # (896, 2), normalised
         self.min_score = min_score
+        self.nms_iou = nms_iou
         self.last_ms = 0.0
+
+    def _decode(self, coords: np.ndarray, keep: np.ndarray) -> np.ndarray:
+        """coords (N,16) raw px-offsets; keep indices -> (M,16) xyxy box + 6 keypts px, normalised 0..1."""
+        a = self.anchors[keep]                            # (M, 2)
+        cx = coords[keep, 0] / self.dw + a[:, 0]
+        cy = coords[keep, 1] / self.dh + a[:, 1]
+        w = (coords[keep, 2] / self.dw) * _DETECT_DSCALE
+        h = (coords[keep, 3] / self.dh) * _DETECT_DSCALE
+        out = np.zeros((len(keep), 16), np.float32)
+        out[:, 0], out[:, 1] = cx - w / 2, cy - h / 2
+        out[:, 2], out[:, 3] = cx + w / 2, cy + h / 2
+        for j in range(6):                                # keypoints -> normalised px
+            out[:, 4 + 2 * j] = coords[keep, 4 + 2 * j] / self.dw + a[:, 0]
+            out[:, 5 + 2 * j] = coords[keep, 5 + 2 * j] / self.dh + a[:, 1]
+        return out
 
     def run(self, frame_bgr: np.ndarray) -> dict | None:
         import time
@@ -163,34 +226,40 @@ class FaceStage:
         coords = np.concatenate([c1[0], c2[0]], 0)        # (896, 16)
         raw = np.clip(np.concatenate([s1[0, :, 0], s2[0, :, 0]], 0), -30.0, 30.0)
         scores = 1.0 / (1.0 + np.exp(-raw))
-        i = int(scores.argmax())
-        if scores[i] < self.min_score:
+        cand = np.where(scores >= self.min_score)[0]
+        if cand.size == 0:
             self.last_ms = (time.perf_counter() - t0) * 1e3
             return None
-        ax, ay = self.anchors[i]
-        # raw coords are in input-pixel space, centred on the anchor
-        cxp = coords[i, 0] / self.dw + ax
-        cyp = coords[i, 1] / self.dh + ay
-        wp = abs(coords[i, 2]) / self.dw
-        hp = abs(coords[i, 3]) / self.dh
-        x0, y0 = (cxp - wp / 2) * fw, (cyp - hp / 2) * fh
-        x1, y1 = (cxp + wp / 2) * fw, (cyp + hp / 2) * fh
-        box = np.clip([x0, y0, x1, y1], [0, 0, 0, 0], [fw, fh, fw, fh]).astype(int)
+        dec = self._decode(coords, cand)                  # normalised
+        px = dec.copy()
+        px[:, 0::2] *= fw
+        px[:, 1::2] *= fh
+        keep = _nms(px[:, :4], scores[cand], self.nms_iou)
+        all_boxes = np.clip(px[keep, :4], [0, 0, 0, 0], [fw, fh, fw, fh]).astype(int)
+        best = keep[0]
+        box = all_boxes[0]
+        eyes = ((float(px[best, 4]), float(px[best, 5])),
+                (float(px[best, 6]), float(px[best, 7])))
 
-        # landmark model on the (square-padded) face crop
+        # landmark model on the square face crop
         cx0, cy0, cx1, cy1 = box
-        side = max(cx1 - cx0, cy1 - cy0, 8)
+        side = int(max(cx1 - cx0, cy1 - cy0, 8))
         mx, my = (cx0 + cx1) // 2, (cy0 + cy1) // 2
-        sx0, sy0 = max(mx - side // 2, 0), max(my - side // 2, 0)
+        sx0 = int(np.clip(mx - side // 2, 0, max(fw - side, 0)))
+        sy0 = int(np.clip(my - side // 2, 0, max(fh - side, 0)))
         crop = frame_bgr[sy0:sy0 + side, sx0:sx0 + side]
         lms = None
-        if crop.size:
+        if crop.size and min(crop.shape[:2]) > 4:
             lx = _to_nchw(crop, (self.lw, self.lh))
             lscore, lcoords = self.lm.run(lx)
-            if lscore.reshape(-1)[0] > 0:
-                pts = lcoords[0][:, :2].copy()
-                pts[:, 0] = pts[:, 0] / self.lw * crop.shape[1] + sx0
-                pts[:, 1] = pts[:, 1] / self.lh * crop.shape[0] + sy0
+            if float(np.ravel(lscore)[0]) > 0.5:
+                # landmark model emits coords normalised to [0,1] over the crop
+                pts = lcoords[0][:, :2].astype(np.float32).copy()
+                pts[:, 0] = pts[:, 0] * crop.shape[1] + sx0
+                pts[:, 1] = pts[:, 1] * crop.shape[0] + sy0
                 lms = pts
+            # NOTE: axis-aligned square crop; the reference uses a rotation-aware
+            # affine crop from the eye keypoints. Fine for an upright call subject.
         self.last_ms = (time.perf_counter() - t0) * 1e3
-        return {"box": box, "landmarks": lms, "score": float(scores[i])}
+        return {"box": box, "all_boxes": all_boxes, "landmarks": lms,
+                "eyes": eyes, "score": float(scores[cand][keep[0]])}

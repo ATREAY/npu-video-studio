@@ -1,27 +1,21 @@
-"""Bring-your-own low-light enhancement model -> compile + profile on AI Hub.
+"""Bring-your-own low-light model: Zero-DCE (Guo et al., CVPR 2020).
 
-The zoo has no low-light model, so we supply Zero-DCE (Zhang et al., CVPR 2020):
-~79k params, no reference image needed, just predicts per-pixel tone curves.
-Tiny and fully convolutional -> good NPU fit.
+The AI Hub zoo has no low-light model. Zero-DCE's DCE-Net is 7 conv layers (~79k
+params), reference-free, fully convolutional -> excellent NPU fit.
 
-This script:
-  1. builds the Zero-DCE network in PyTorch (architecture is short; weights optional)
-  2. traces it to ONNX at the pipeline's working resolution
-  3. submits a compile job + profile job to AI Hub for the target device(s)
-  4. writes latency / NPU-utilisation to benchmarks/results.md
+  python aihub/byo_lowlight.py --onnx-only          # -> export_assets/zero_dce/zero_dce.onnx
+  python aihub/byo_lowlight.py --device "Snapdragon X2 Elite CRD"   # + compile/profile on AI Hub
 
-Run:  python aihub/byo_lowlight.py --device "Snapdragon X2 Elite CRD" [--weights zero_dce.pth]
-
-If --weights is omitted the model runs with random init (fine for *latency* profiling;
-load real weights before measuring quality). Pretrained Zero-DCE weights:
-  https://github.com/Li-Chongyi/Zero-DCE  (Zero-DCE_code/snapshots/Epoch99.pth)
+Pretrained weights (auto-downloaded): Li-Chongyi/Zero-DCE  Epoch99.pth
 """
 from __future__ import annotations
 
 import argparse
 import pathlib
 import sys
+import urllib.request
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -30,95 +24,99 @@ PROJ = HERE.parent
 sys.path.insert(0, str(HERE))
 import config  # noqa: E402
 
+WEIGHTS_URL = ("https://raw.githubusercontent.com/Li-Chongyi/Zero-DCE/master/"
+               "Zero-DCE_code/snapshots/Epoch99.pth")
+OUT_DIR = PROJ / "export_assets" / "zero_dce"
+
 
 class ZeroDCE(nn.Module):
-    """DCE-Net: 7 conv layers, symmetric skips, outputs 24 curve maps (8 iters x RGB)."""
+    """DCE-Net — matches Li-Chongyi/Zero-DCE `enhance_net_nopool` exactly."""
 
-    def __init__(self, ch: int = 32, n_iter: int = 8):
+    def __init__(self, nf: int = 32):
         super().__init__()
-        self.n_iter = n_iter
         self.relu = nn.ReLU(inplace=True)
-        self.e1 = nn.Conv2d(3, ch, 3, 1, 1)
-        self.e2 = nn.Conv2d(ch, ch, 3, 1, 1)
-        self.e3 = nn.Conv2d(ch, ch, 3, 1, 1)
-        self.e4 = nn.Conv2d(ch, ch, 3, 1, 1)
-        self.d3 = nn.Conv2d(ch * 2, ch, 3, 1, 1)
-        self.d2 = nn.Conv2d(ch * 2, ch, 3, 1, 1)
-        self.d1 = nn.Conv2d(ch * 2, 3 * n_iter, 3, 1, 1)
+        self.e_conv1 = nn.Conv2d(3, nf, 3, 1, 1, bias=True)
+        self.e_conv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
+        self.e_conv3 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
+        self.e_conv4 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
+        self.e_conv5 = nn.Conv2d(nf * 2, nf, 3, 1, 1, bias=True)
+        self.e_conv6 = nn.Conv2d(nf * 2, nf, 3, 1, 1, bias=True)
+        self.e_conv7 = nn.Conv2d(nf * 2, 24, 3, 1, 1, bias=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x1 = self.relu(self.e1(x))
-        x2 = self.relu(self.e2(x1))
-        x3 = self.relu(self.e3(x2))
-        x4 = self.relu(self.e4(x3))
-        x5 = self.relu(self.d3(torch.cat([x3, x4], 1)))
-        x6 = self.relu(self.d2(torch.cat([x2, x5], 1)))
-        curves = torch.tanh(self.d1(torch.cat([x1, x6], 1)))
-        out = x
-        for i in range(self.n_iter):
-            r = curves[:, 3 * i:3 * i + 3, :, :]
-            out = out + r * (out * out - out)
-        return torch.clamp(out, 0.0, 1.0)
+        x1 = self.relu(self.e_conv1(x))
+        x2 = self.relu(self.e_conv2(x1))
+        x3 = self.relu(self.e_conv3(x2))
+        x4 = self.relu(self.e_conv4(x3))
+        x5 = self.relu(self.e_conv5(torch.cat([x3, x4], 1)))
+        x6 = self.relu(self.e_conv6(torch.cat([x2, x5], 1)))
+        x_r = torch.tanh(self.e_conv7(torch.cat([x1, x6], 1)))
+        for i in range(8):                               # 8 curve-map iterations
+            r = x_r[:, 3 * i:3 * i + 3, :, :]            # slice, not Split op
+            x = x + r * (x * x - x)
+        return torch.clamp(x, 0.0, 1.0)
 
 
-def to_onnx(weights: str | None, h: int, w: int, out: pathlib.Path) -> pathlib.Path:
+def build(weights: str | None) -> ZeroDCE:
     net = ZeroDCE().eval()
-    if weights:
-        sd = torch.load(weights, map_location="cpu")
-        net.load_state_dict(sd.get("state_dict", sd), strict=False)
-        print(f"loaded weights: {weights}")
-    else:
-        print("WARNING: random init — latency-only, quality not meaningful")
+    if weights is None:
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
+        weights = str(OUT_DIR / "Epoch99.pth")
+        if not pathlib.Path(weights).exists():
+            print(f"downloading Zero-DCE weights -> {weights}")
+            urllib.request.urlretrieve(WEIGHTS_URL, weights)
+    sd = torch.load(weights, map_location="cpu", weights_only=False)
+    net.load_state_dict(sd)
+    print(f"loaded weights: {weights}")
+    return net
+
+
+def to_onnx(net: ZeroDCE, h: int, w: int, path: pathlib.Path) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
     dummy = torch.rand(1, 3, h, w)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    torch.onnx.export(net, dummy, out.as_posix(), input_names=["image"],
-                      output_names=["enhanced"], opset_version=17,
-                      dynamic_axes=None)
-    print(f"onnx -> {out}  ({out.stat().st_size / 1e3:.0f} KB)")
-    return out
+    torch.onnx.export(net, dummy, path.as_posix(), input_names=["image"],
+                      output_names=["enhanced"], opset_version=17)
+    print(f"onnx -> {path}  ({path.stat().st_size / 1e3:.0f} KB)  input {h}x{w}")
+    return path
 
 
-def profile_on_hub(onnx_path: pathlib.Path, device_name: str, runtime: str) -> None:
+def profile_on_hub(onnx_path: pathlib.Path, device: str, runtime: str) -> None:
     import qai_hub as hub
-
-    dev = hub.Device(device_name)
-    target = {
-        "onnx": hub.client.SourceModelType.ONNX,
-    }
-    print(f"submitting compile job: {onnx_path.name} -> {device_name} ({runtime})")
-    compile_job = hub.submit_compile_job(
-        model=onnx_path.as_posix(),
-        device=dev,
-        options=f"--target_runtime {runtime}",
-        name=f"lowlight-zerodce-{runtime}",
-    )
-    compiled = compile_job.get_target_model()
-    print(f"  compile job: {compile_job.url}")
-
-    profile_job = hub.submit_profile_job(
-        model=compiled, device=dev, name=f"lowlight-zerodce-{runtime}-profile"
-    )
-    print(f"  profile job: {profile_job.url}")
-    prof = profile_job.download_profile()
+    dev = hub.Device(device)
+    cj = hub.submit_compile_job(model=onnx_path.as_posix(), device=dev,
+                                options=f"--target_runtime {runtime}",
+                                name="lowlight-zerodce")
+    print("compile:", cj.url)
+    pj = hub.submit_profile_job(model=cj.get_target_model(), device=dev,
+                                name="lowlight-zerodce-profile")
+    print("profile:", pj.url)
+    prof = pj.download_profile()
     exe = prof["execution_summary"]
-    lat_us = exe.get("estimated_inference_time", 0)
-    print(f"  estimated inference time: {lat_us / 1000:.2f} ms")
-    print(f"  compute unit breakdown:  {exe.get('compute_unit_execution_time', {})}")
+    print(f"estimated inference time: {exe.get('estimated_inference_time', 0)/1000:.2f} ms")
+    print(f"compute units: {exe.get('layer_counts_by_compute_unit', exe)}")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--device", default=config.DEVICE)
     ap.add_argument("--runtime", default=config.TARGET_RUNTIME)
-    ap.add_argument("--weights", default=None)
+    ap.add_argument("--weights", default=None, help="path to Epoch99.pth (auto-download if omitted)")
     ap.add_argument("--height", type=int, default=360)
     ap.add_argument("--width", type=int, default=640)
-    ap.add_argument("--skip-hub", action="store_true", help="only export onnx")
+    ap.add_argument("--onnx-only", action="store_true", help="export ONNX, skip AI Hub")
     args = ap.parse_args()
 
-    onnx_path = PROJ / "models" / "src" / "zero_dce.onnx"
-    to_onnx(args.weights, args.height, args.width, onnx_path)
-    if not args.skip_hub:
+    net = build(args.weights)
+    onnx_path = to_onnx(net, args.height, args.width, OUT_DIR / "zero_dce.onnx")
+
+    # quick numeric self-check: a dark input should get brighter
+    with torch.no_grad():
+        dark = torch.rand(1, 3, args.height, args.width) * 0.15
+        out = net(dark)
+    print(f"self-check: mean {dark.mean():.3f} -> {out.mean():.3f} "
+          f"({'brighter OK' if out.mean() > dark.mean() else 'NOT brighter?!'})")
+
+    if not args.onnx_only:
         profile_on_hub(onnx_path, args.device, args.runtime)
     return 0
 
