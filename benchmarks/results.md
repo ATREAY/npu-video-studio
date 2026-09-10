@@ -4,18 +4,42 @@ Runtime target: `onnx` → ONNX Runtime + QNN Execution Provider (Hexagon NPU / 
 Toolchain reported by AI Hub: `onnx_runtime 1.27.1`, `qairt 2.45.0`.
 Budget: sum of stage latencies **< 33 ms** for 30 fps, **100% NPU** per model (no CPU fallback).
 
-## Summary (2026-09-08)
+## Summary (2026-09-08 / 09-10)
+
+### At each model's default resolution
 
 | Stage | Model | float (ms) | w8a8 / INT8 (ms) | NPU | CPU ops |
 |-------|-------|-----------:|-----------------:|-----|--------:|
-| 1 face detect + landmarks | `mediapipe_face` (2 comp) | **0.6** | pending¹ | 100% | 0 |
-| 2 person segmentation     | `mediapipe_selfie`        | **0.4** | **0.2** | 100% | 0 |
-| 4 super-resolution        | `quicksrnetmedium`        | **0.5** | pending² | 100% | 0 |
-| **Pipeline total**        |                           | **1.5** | — | **100%** | **0** |
+| 1 face detect + landmarks | `mediapipe_face` (2 comp, 256²+192²) | **0.6** | pending¹ | 100% | 0 |
+| 2 person segmentation     | `mediapipe_selfie` (256²)            | **0.4** | **0.2** | 100% | 0 |
+| 4 super-resolution        | `quicksrnetmedium` (128²→4×→512²)    | **0.5** | pending² | 100% | 0 |
+| **Pipeline total**        |                                     | **1.5** | — | **100%** | **0** |
 
-**float pipeline: 1.5 ms → PASS with +31.5 ms headroom (≈22× under the 30 fps budget).**
-Every op runs on the NPU; zero CPU fallback. On-device vs local-CPU accuracy: landmark
-PSNR ≈ 75 dB (float, effectively lossless).
+### At realistic capture resolution (video-call scenario)
+
+| Stage | Config | float (ms) | NPU |
+|-------|--------|-----------:|-----|
+| segment | 256² (matte upsampled to frame) — already representative | 0.4 | 100% |
+| super-resolution | **640×360 → 2× → 1280×720** (upscale a 360p stream) | **3.4** | 100% (19 ops) |
+| super-resolution | 320×180 → 4× → 1280×720 | pending | — |
+| face | fixed 256²/192² input | 0.6 | 100% |
+| **realistic pipeline** | face + segment + SR@720p (+ tiny low-light) | **≈4.5** | **100%** |
+
+**Realistic float pipeline ≈ 4.5 ms → 7× under the 33 ms / 30 fps budget; 60 fps is comfortably feasible.**
+Every op on the NPU, zero CPU fallback. Landmark on-device-vs-CPU PSNR ≈ 75 dB (lossless).
+
+### NPU vs CPU (same compiled ONNX, ONNX Runtime)
+
+CPU-EP timings from the `app/` pipeline running on a cluster Xeon (steady state):
+
+| Stage | NPU (X2 Elite) | CPU (Xeon, ORT CPU EP) | speed-up |
+|-------|---------------:|----------------------:|---------:|
+| face (detect+landmarks) | 0.6 ms | ~6.7 ms | ~11× |
+| segment | 0.4 ms | ~48 ms | ~120× |
+| super-resolution (128²→512²) | 0.5 ms | ~15 ms | ~30× |
+
+(Indicative — a Snapdragon's own CPU cores differ from a Xeon; re-measure NPU-vs-CPU on
+the same device for the final chart. Still: the NPU offload frees the CPU/GPU for the call.)
 
 Notes:
 - These use each model's **default input resolution**. The real pipeline must re-export
