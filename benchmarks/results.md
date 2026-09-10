@@ -19,13 +19,14 @@ Budget: sum of stage latencies **< 33 ms** for 30 fps, **100% NPU** per model (n
 
 | Stage | Config | float (ms) | NPU |
 |-------|--------|-----------:|-----|
-| segment | 256² (matte upsampled to frame) — already representative | 0.4 | 100% |
-| super-resolution | **640×360 → 2× → 1280×720** (upscale a 360p stream) | **3.4** | 100% (19 ops) |
-| super-resolution | 320×180 → 4× → 1280×720 | pending | — |
 | face | fixed 256²/192² input | 0.6 | 100% |
-| **realistic pipeline** | face + segment + SR@720p (+ tiny low-light) | **≈4.5** | **100%** |
+| segment | 256² (matte upsampled to frame) — already representative | 0.4 | 100% |
+| low-light | Zero-DCE (BYO), 256² | pending³ | — |
+| super-resolution | **640×360 → 2× → 1280×720** (upscale a 360p stream) | **3.4** | 100% (19 ops) |
+| super-resolution | 320×180 → 4× → 1280×720 (upscale a 180p stream) | **1.5** | 100% (19 ops), 33 MB peak |
+| **realistic pipeline** | face + segment + low-light + SR@720p | **≈4.5–6** | **100%** |
 
-**Realistic float pipeline ≈ 4.5 ms → 7× under the 33 ms / 30 fps budget; 60 fps is comfortably feasible.**
+**Realistic float pipeline ≈ 4.5–6 ms → 5–7× under the 33 ms / 30 fps budget; 60 fps is comfortably feasible.**
 Every op on the NPU, zero CPU fallback. Landmark on-device-vs-CPU PSNR ≈ 75 dB (lossless).
 
 ### NPU vs CPU (same compiled ONNX, ONNX Runtime)
@@ -52,6 +53,8 @@ Notes:
 - ² `quicksrnetmedium` w8a8 calibration downloads BSDS300 from `www2.eecs.berkeley.edu`
   which now returns 403 (dead upstream). Needs a BSDS300 mirror + `configure_dataset`,
   or switch the SR calibration dataset. float SR (0.5 ms) is already well within budget.
+- ³ Zero-DCE (bring-your-own, `aihub/byo_lowlight.py`) — AI Hub compile+profile in flight;
+  number lands here when the job completes.
 
 ---
 

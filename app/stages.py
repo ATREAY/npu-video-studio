@@ -105,13 +105,25 @@ class LowLightStage:
     """
     name = "lowlight"
 
-    _DEFAULT = ASSETS / "zero_dce" / "zero_dce.onnx"
+    # prefer the AI-Hub-compiled asset, then the plain torch export
+    _DEFAULTS = [
+        ASSETS / "zero_dce-onnx-compiled",
+        ASSETS / "zero_dce" / "zero_dce.onnx",
+    ]
 
     def __init__(self, model_onnx: str | None = None, prefer: str = "auto",
                  luma_gate: float = 110.0):
         self.luma_gate = luma_gate
         self.s: Session | None = None
-        path = model_onnx or (str(self._DEFAULT) if self._DEFAULT.exists() else None)
+        path = model_onnx
+        if path is None:
+            for d in self._DEFAULTS:
+                if d.is_dir():
+                    hits = sorted(d.rglob("*.onnx"))
+                    if hits:
+                        path = str(hits[0]); break
+                elif d.exists():
+                    path = str(d); break
         if path and pathlib.Path(path).exists():
             self.s = Session(path, prefer)
             _, _, self.h, self.w = self.s.input_shapes[self.s.input_names[0]]

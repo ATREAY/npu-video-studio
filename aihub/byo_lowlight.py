@@ -89,14 +89,21 @@ def profile_on_hub(onnx_path: pathlib.Path, device: str, runtime: str) -> None:
     cj = hub.submit_compile_job(model=onnx_path.as_posix(), device=dev,
                                 options=f"--target_runtime {runtime}",
                                 name="lowlight-zerodce")
-    print("compile:", cj.url)
+    print("compile:", cj.url, flush=True)
+    st = cj.wait()
+    if not st.success:
+        print("compile FAILED:", cj.get_status()); return
     pj = hub.submit_profile_job(model=cj.get_target_model(), device=dev,
                                 name="lowlight-zerodce-profile")
-    print("profile:", pj.url)
-    prof = pj.download_profile()
-    exe = prof["execution_summary"]
-    print(f"estimated inference time: {exe.get('estimated_inference_time', 0)/1000:.2f} ms")
-    print(f"compute units: {exe.get('layer_counts_by_compute_unit', exe)}")
+    print("profile:", pj.url, flush=True)
+    st = pj.wait()
+    if not st.success:
+        print("profile FAILED:", pj.get_status()); return
+    exe = pj.download_profile()["execution_summary"]
+    us = exe.get("estimated_inference_time", 0)
+    print(f"estimated inference time: {us / 1000:.2f} ms")
+    print(f"peak memory (MB): {exe.get('inference_memory_peak_range', '?')}")
+    print(f"compute units: {exe.get('layer_counts_by_compute_unit', {})}")
 
 
 def main() -> int:
