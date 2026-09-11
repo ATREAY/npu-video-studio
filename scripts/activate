@@ -1,9 +1,19 @@
 # shellcheck shell=bash
 # Usage:  source scripts/activate
+#
+# Deliberately does NOT call `conda activate` / `source activate` — that needs
+# conda's shell hook loaded in the *current* shell (`conda init` only wires up
+# *future* shells, so it throws "Run 'conda init' before 'conda activate'" here
+# even right after running conda init). All we actually need is the venv's own
+# bin/ on PATH, so just do that directly — works in any shell, no conda hook needed.
 _PROJ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-module load anaconda3/2025.06 2>/dev/null || true
-# shellcheck disable=SC1091
-source activate "$_PROJ/.venv" 2>/dev/null || conda activate "$_PROJ/.venv"
+_VENV="$_PROJ/.venv"
+
+case ":$PATH:" in
+    *":$_VENV/bin:"*) ;;                    # already on PATH, don't duplicate
+    *) export PATH="$_VENV/bin:$PATH" ;;
+esac
+export VIRTUAL_ENV="$_VENV"
 
 # --- isolation: never see or write the user's ~/.local thesis packages ---
 export PYTHONNOUSERSITE=1     # hide ~/.local/lib/pythonX/site-packages from this env
