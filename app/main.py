@@ -16,8 +16,8 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-import cv2
 
+from . import imgops
 from .pipeline import Pipeline
 from .video_io import open_source, Sink
 from .session import available_providers
@@ -26,7 +26,10 @@ from .session import available_providers
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="npu-video-studio")
     ap.add_argument("--source", required=True, help="webcam index | video path | image path")
-    ap.add_argument("--out", default="out.mp4", help="'virtualcam' | *.mp4 | directory")
+    ap.add_argument("--out", default="out.mp4",
+                    help="'window' (OBS Window Capture, recommended on Snapdragon) | "
+                         "'virtualcam' (needs pyvirtualcam, no win_arm64 wheel) | "
+                         "*.mp4 | directory")
     ap.add_argument("--provider", default="auto", choices=["auto", "npu", "cpu"])
     ap.add_argument("--bg", default="blur", choices=["blur", "replace", "none"])
     ap.add_argument("--bg-image", default=None)
@@ -46,7 +49,7 @@ def main(argv=None) -> int:
     if args.size:
         w, h = args.size.lower().split("x")
         size = (int(w), int(h))
-    bg_img = cv2.imread(args.bg_image) if args.bg_image else None
+    bg_img = imgops.imread(args.bg_image) if args.bg_image else None
 
     pipe = Pipeline(
         prefer=args.provider,

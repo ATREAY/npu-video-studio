@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pathlib
 import numpy as np
-import cv2
 
+from . import imgops
 from .session import Session
 
 ASSETS = pathlib.Path(__file__).resolve().parent.parent / "export_assets"
@@ -16,15 +16,14 @@ ASSETS = pathlib.Path(__file__).resolve().parent.parent / "export_assets"
 
 def _to_nchw(bgr: np.ndarray, size: tuple[int, int]) -> np.ndarray:
     """BGR uint8 HxWx3 -> 1x3xHxW float32 RGB [0,1] at `size` (w, h)."""
-    rgb = cv2.cvtColor(cv2.resize(bgr, size, interpolation=cv2.INTER_LINEAR),
-                       cv2.COLOR_BGR2RGB)
+    rgb = imgops.bgr_to_rgb(imgops.resize(bgr, size))
     return rgb.astype(np.float32).transpose(2, 0, 1)[None] / 255.0
 
 
 def _to_bgr(nchw: np.ndarray) -> np.ndarray:
     """1x3xHxW float32 RGB [0,1] -> BGR uint8 HxWx3."""
     rgb = np.clip(nchw[0].transpose(1, 2, 0), 0, 1) * 255.0
-    return cv2.cvtColor(rgb.astype(np.uint8), cv2.COLOR_RGB2BGR)
+    return imgops.rgb_to_bgr(rgb.astype(np.uint8))
 
 
 # --------------------------------------------------------------------------- #
@@ -42,7 +41,7 @@ class SegmentStage:
         if mask.min() < 0 or mask.max() > 1:             # logits -> prob
             mask = 1.0 / (1.0 + np.exp(-mask))
         fh, fw = frame_bgr.shape[:2]
-        return cv2.resize(mask, (fw, fh), interpolation=cv2.INTER_LINEAR)
+        return imgops.resize(mask, (fw, fh))
 
     @property
     def last_ms(self) -> float:
@@ -128,7 +127,7 @@ class LowLightStage:
             self.s = Session(path, prefer)
             _, _, self.h, self.w = self.s.input_shapes[self.s.input_names[0]]
         self.backend = "zero-dce" if self.s is not None else "clahe"
-        self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        self._clahe = imgops.Clahe(clip_limit=2.0, tile=(8, 8))
         self.last_ms = 0.0
 
     def run(self, frame_bgr: np.ndarray) -> np.ndarray:
@@ -141,12 +140,10 @@ class LowLightStage:
             x = _to_nchw(frame_bgr, (self.w, self.h))
             y = self.s.run(x)[0]
             fh, fw = frame_bgr.shape[:2]
-            out = cv2.resize(_to_bgr(y), (fw, fh))
+            out = imgops.resize(_to_bgr(y), (fw, fh))
             self.last_ms = self.s.last_ms
             return out
-        lab = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2LAB)
-        lab[:, :, 0] = self._clahe.apply(lab[:, :, 0])
-        out = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        out = self._clahe.apply_bgr(frame_bgr)
         self.last_ms = (time.perf_counter() - t0) * 1e3
         return out
 

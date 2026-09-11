@@ -1,0 +1,18 @@
+# Runtime dependencies for the Snapdragon (Windows-on-ARM64) target.
+# Every one of these has a confirmed win_arm64 wheel on PyPI (checked 2026-09-11) and
+# is included pre-downloaded in packaging/wheelhouse/ for a fully offline install.
+#
+# Deliberately NOT here: torch, qai-hub, qai-hub-models — those are dev-side tools used
+# to compile/profile models (aihub/ scripts); the deployed app never imports them.
+#
+# opencv-python[-headless] is deliberately NOT here: OpenCV publishes no win_arm64
+# wheel at all. Pillow + scipy + scikit-image + PyAV replace it (see app/imgops.py,
+# app/video_io.py) for the exact same functionality on this platform.
+
+onnxruntime==1.30.0
+onnxruntime-qnn==2.6.0      # ships onnxruntime_providers_qnn.dll + Qualcomm QnnHtp/Cpu/Gpu.dll
+numpy==2.4.6
+Pillow>=12.0
+scipy>=1.17
+scikit-image>=0.26
+av>=18.0                     # PyAV: webcam capture + mp4 mux without OpenCV
