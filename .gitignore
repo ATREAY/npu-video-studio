@@ -25,3 +25,4 @@ packaging/wheelhouse/*.whl
 # misc
 .DS_Store
 *.log
+smoke_test_output/
