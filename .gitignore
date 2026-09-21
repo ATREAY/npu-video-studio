@@ -26,3 +26,8 @@ packaging/wheelhouse/*.whl
 .DS_Store
 *.log
 smoke_test_output/
+
+# Zero-DCE weights/ONNX are CC BY-NC 4.0 — not redistributed. Rebuild locally with:
+#   python aihub/byo_lowlight.py --onnx-only
+export_assets/zero_dce/
+export_assets/zero_dce-onnx-compiled/

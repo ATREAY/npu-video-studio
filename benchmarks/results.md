@@ -28,27 +28,28 @@ Budget: sum of stage latencies **< 33 ms** for 30 fps, **100% NPU** per model (n
 | **realistic pipeline** | face + segment + low-light + SR@720p(2×) | **≈5.8** | **100%** |
 | **realistic pipeline** | face + segment + low-light + SR@720p(4×) | **≈3.9** | **100%** |
 
-**Realistic float pipeline 3.9–5.8 ms → 6–8× under the 33 ms / 30 fps budget; ~170 fps theoretical headroom. Every stage 100% on the NPU, zero CPU ops.**
-Every op on the NPU, zero CPU fallback. Landmark on-device-vs-CPU PSNR ≈ 75 dB (lossless).
+**Sum of separately profiled models ≈ 3.9–5.8 ms vs a 33 ms budget (30 fps).** Every stage
+runs 100% on the NPU with zero CPU ops. This sum excludes pre/post-processing, compositing
+and capture and is **not** a measured end-to-end frame time. Landmark on-device-vs-CPU
+output PSNR ≈ 75 dB (float).
 
-### NPU vs CPU (same compiled ONNX, ONNX Runtime)
+Profile jobs for the realistic-resolution super-resolution runs:
+2× @ 640×360: [j57erdeqp](https://workbench.aihub.qualcomm.com/jobs/j57erdeqp/) ·
+4× @ 320×180: [jgk2xy0og](https://workbench.aihub.qualcomm.com/jobs/jgk2xy0og/).
 
-CPU-EP timings from the `app/` pipeline running on a cluster Xeon (steady state):
+### NPU vs CPU: not claimed
 
-| Stage | NPU (X2 Elite) | CPU (Xeon, ORT CPU EP) | speed-up |
-|-------|---------------:|----------------------:|---------:|
-| face (detect+landmarks) | 0.6 ms | ~6.7 ms | ~11× |
-| segment | 0.4 ms | ~48 ms | ~120× |
-| super-resolution (128²→512²) | 0.5 ms | ~15 ms | ~30× |
-
-(Indicative — a Snapdragon's own CPU cores differ from a Xeon; re-measure NPU-vs-CPU on
-the same device for the final chart. Still: the NPU offload frees the CPU/GPU for the call.)
+An earlier draft compared the NPU against CPU timings taken on a shared, CPU-throttled
+cluster node (the same node took ~2 s to run the 79k-parameter Zero-DCE at 256²).
+That comparison is not meaningful for a Snapdragon and has been removed rather than
+quoted. A valid comparison needs the CPU and NPU measured **on the same device**.
 
 Notes:
-- These use each model's **default input resolution**. The real pipeline must re-export
-  with explicit `--height/--width` at the target capture resolution (e.g. 720p); that
-  raises stage 2 and 4. Headroom is large enough that 30 fps is safe and 60 fps likely.
-- Stage 3 (low-light, Zero-DCE) is bring-your-own — see `aihub/byo_lowlight.py`. Not yet profiled.
+- The default-resolution table above uses each model's default input size; the
+  realistic-resolution table re-exports super-resolution at 720p output (segmentation
+  and face are fixed-size networks, so their defaults are already representative).
+- Stage 3 (low-light) is Zero-DCE, bring-your-own — see `aihub/byo_lowlight.py`; profiled
+  at 1.40 ms (job jpxlo71lp). Its weights are CC BY-NC 4.0 and are not redistributed here.
 - ¹ `mediapipe_face` w8a8 needs the gated Kaggle `human-face` calibration set:
   `kaggle datasets download ashwingupta3012/human-face` then
   `python -m qai_hub_models.scripts.configure_dataset --class qai_hub_models.models.mediapipe_face.dataset.HumanFacesDataset --files <zip>`, then re-run `--precision w8a8 --only face`.

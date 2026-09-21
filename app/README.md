@@ -1,7 +1,7 @@
 # app/ — runnable pipeline
 
 ```
-python -m app.main --source <cam idx | video | image> --out <virtualcam | out.mp4 | dir/>
+python -m app.main --source <cam idx | video | image> --out <window | virtualcam | out.mp4 | dir/>
                    [--provider auto|npu|cpu] [--bg blur|replace|none] [--bg-image bg.jpg]
                    [--sr-asset <export_assets subdir>] [--sr-every-n N]
                    [--lowlight-onnx zero_dce.onnx] [--stages face,segment,lowlight,superres]
@@ -15,7 +15,7 @@ python -m app.main --source <cam idx | video | image> --out <virtualcam | out.mp
   (Zero-DCE if `--lowlight-onnx` given, else CLAHE), SuperRes (QuickSRNet, fixed scale).
 - `compositor.py` — background blur/replace from the alpha matte, EMA auto-framer.
 - `pipeline.py` — orchestration + per-stage timing + 33 ms / 30 fps budget check.
-- `video_io.py` — webcam / file / image source; mp4 / virtualcam / frames-dir sink.
+- `video_io.py` — webcam / file / image source; mp4 / window / virtualcam / frames-dir sink.
 
 Models are the AI-Hub-compiled ONNX in `../export_assets/`. Re-export with
 `aihub/export_all.py` (or `qai-hub-models export ...`) at the target resolution first.
@@ -33,7 +33,7 @@ device (Windows/macOS/Linux-v4l2loopback).
 - **Real-res SR**: `--sr-asset quicksrnetmedium-onnx-float-2x360` = 640×360 → 1280×720 @2×
   (compiled asset downloaded from AI Hub job j5wl69lzp). `_find_onnx` handles both flat and
   `job_*/model.onnx` layouts; scale is read from the model I/O.
-- **Low-light**: real Zero-DCE (Li-Chongyi Epoch99 weights) at `export_assets/zero_dce/zero_dce.onnx`
+- **Low-light**: real Zero-DCE (Li-Chongyi Epoch99 weights) at `export_assets/zero_dce/zero_dce.onnx` (not committed — CC BY-NC; build it with `python aihub/byo_lowlight.py --onnx-only`)
   (256², curves upsample). Auto-used if present; `--lowlight-onnx` overrides; CLAHE if neither.
 - **CPU-fallback latency is machine-dependent.** On this cgroup-throttled cluster node the
   CPU EP is ~30–100× slower than a normal laptop; ignore absolute cluster CPU ms. The NPU

@@ -23,7 +23,7 @@
                    |                                    is low-res
             [upscale to output res]
                    |
-          virtual camera  ->  Zoom / Meet / Teams
+          preview window -> OBS Virtual Camera -> meeting app (untested)
 ```
 
 ## 30 fps frame budget (33.3 ms)
@@ -46,7 +46,7 @@ resolution, run SR at 15 fps and hold, INT8 everywhere.
   (`QNNExecutionProvider`), one `InferenceSession` per model, HTP (NPU) backend.
 - Verify with ORT profiling / `session.get_providers()` that ops land on QNN and
   do not fall back to CPU.
-- Native **ARM64** build. No x64 emulation.
+- Target: native **ARM64** Python (see [packaging/](../packaging/)). Not yet run on Windows-on-ARM hardware.
 
 ## Concurrency
 
@@ -54,11 +54,11 @@ The four models are independent per frame except stage 4 depends on 1-3 output.
 Run face + segmentation as concurrent ORT sessions; the QNN backend serialises on
 the single HTP but overlaps DMA/prepost. Measure actual wall-time, don't assume.
 
-## Models (AI Hub zoo) — confirm exact module names with `python -m qai_hub_models.models`
+## Models
 
 | Role | First choice | Alternatives |
 |------|--------------|--------------|
-| face | `mediapipe_face` | `lightweight_face_detection` |
+| face | `mediapipe_face` | `face_det_lite` |
 | segmentation | `mediapipe_selfie` | `ffnet_40s`, `ffnet_54s`, `deeplabv3_plus_mobilenet` |
-| low-light | `zero_dce` | histogram/Retinex on CPU if no NPU model exists |
-| super-res | `quicksrnet_medium` | `quicksrnet_small`, `xlsr`, `sesr_m5`, `real_esrgan_x4plus` |
+| low-light | Zero-DCE (bring-your-own, **not** in the AI Hub zoo) | CLAHE on CPU |
+| super-res | `quicksrnetmedium` | `quicksrnetsmall`, `xlsr`, `sesr_m5`, `real_esrgan_x4plus` |

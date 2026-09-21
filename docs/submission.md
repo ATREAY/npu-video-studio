@@ -1,55 +1,94 @@
-# Submission write-up — mapped to judging criteria
+# Submission write-up — DRAFT
 
-> Fill this in as the build progresses. Headers match the four scored criteria so
-> a judge can score each in one pass.
+> Headers match the four scored criteria. **Everything not yet done is marked `TODO`.**
+> Nothing here should claim more than what exists in the repo today.
 
 ## 1. Technical Implementation
-- Models from the Qualcomm AI Hub zoo (`qai-hub-models 0.61.0`): `mediapipe_face`,
-  `mediapipe_selfie`, `quicksrnetmedium`. Low-light (stage 3) is a bring-your-own
-  Zero-DCE model compiled directly via `qai_hub.submit_compile_job` (`aihub/byo_lowlight.py`).
-- Compiled + profiled on a real **Snapdragon X2 Elite CRD** (Windows 11 on ARM) via the
-  AI Hub device farm. Target runtime `onnx` → **ONNX Runtime 1.27.1 + QNN EP** on the
-  Hexagon NPU (HTP). QAIRT 2.45.
-- **Measured on-device (float), 2026-09-08** — see `benchmarks/results.md`:
 
-  | Stage | Model | Latency | NPU | CPU ops |
-  |---|---|---:|---|---:|
-  | face detect + landmarks | `mediapipe_face` | 0.6 ms | 100% | 0 |
-  | person segmentation | `mediapipe_selfie` | 0.4 ms | 100% | 0 |
-  | super-resolution | `quicksrnetmedium` | 0.5 ms | 100% | 0 |
-  | **pipeline** | | **1.5 ms** | **100%** | **0** |
+**Pipeline.** Four neural stages per frame, all executed through ONNX Runtime with the
+QNN execution provider (Hexagon NPU) when available, CPU otherwise:
 
-  → **22× under the 33 ms / 30 fps budget**; every op on the NPU, zero CPU fallback.
-- Accuracy: on-device vs local-CPU landmark PSNR ≈ 75 dB (float, effectively lossless).
-- Quantisation: INT8 (w8a8) for segmentation → 0.2 ms, **2× faster than float**, still
-  100% NPU. face + SR INT8 pending calibration-dataset access (see results.md notes).
-- TODO before submission: re-export at real capture resolution (720p) with `--height/--width`;
-  measured concurrent per-frame wall-time in the app; NPU-vs-CPU-EP delta on the same device;
-  native ARM64 build with `session.get_providers()` + ORT trace showing no fallback.
+| Stage | Model | Source |
+|---|---|---|
+| Face detect + 468 landmarks | `mediapipe_face` | Qualcomm AI Hub zoo |
+| Person segmentation (background blur) | `mediapipe_selfie` | Qualcomm AI Hub zoo |
+| Low-light enhancement | Zero-DCE | **bring-your-own** (open source), compiled with `qai_hub.submit_compile_job` |
+| Super-resolution | `quicksrnetmedium` | Qualcomm AI Hub zoo |
+
+**Measured on a real Snapdragon X2 Elite** (AI Hub hosted device, `qai-hub-models 0.61.0`,
+QAIRT 2.45), float precision. Full table with job links: [benchmarks/results.md](../benchmarks/results.md).
+
+| Stage | Latency | Compute |
+|---|---:|---|
+| face detect + landmarks | 0.6 ms | 100% NPU, 0 CPU ops |
+| person segmentation | 0.4 ms | 100% NPU, 0 CPU ops |
+| low-light (Zero-DCE, 256²) | 1.4 ms | 100% NPU, 0 CPU ops |
+| super-resolution 640×360→720p (2×) | 3.4 ms | 100% NPU, 0 CPU ops |
+| super-resolution 320×180→720p (4×) | 1.5 ms | 100% NPU, 0 CPU ops |
+| **Sum of profiled models** | **≈ 3.9–5.8 ms** | budget 33 ms for 30 fps |
+
+The sum is of separately profiled models. It excludes pre/post-processing, compositing
+and capture, and is **not** a measured end-to-end frame time.
+
+- Accuracy: on-device vs CPU landmark output PSNR ≈ 75 dB (float).
+- Quantization: INT8 (w8a8) done for segmentation only (0.2 ms, 2× faster than float).
+  Face and super-resolution INT8 are blocked on calibration datasets (gated Kaggle set;
+  dead upstream URL) — documented in results.md.
+- Engineering findings worth noting: the face-detector decode was validated bit-exact
+  against Qualcomm's reference implementation; OpenCV has no Windows-ARM64 wheel, so the
+  app carries a second image-op backend (Pillow/SciPy/scikit-image/PyAV) that was tested
+  end to end with OpenCV blocked.
+- TODO: measure concurrent per-frame wall time in the app **on a Snapdragon device**;
+  same-device NPU-vs-CPU comparison; confirm `QNNExecutionProvider` actually loads via
+  `onnxruntime-qnn` on Windows-on-ARM (currently unvalidated).
 
 ## 2. Application Use Case & Innovation
-- Problem: video-call quality on thin-and-light PCs and poor connectivity in India.
-- On-device is essential: CPU/GPU stay free for the call; frames never leave the
-  device; incoming low-res stream upscaled locally.
-- Beyond Windows Studio Effects: adds real-time super-resolution + low-light rescue
-  + stacked effects, all on NPU, open and configurable.
-- Side-by-side comparison vs Studio Effects: <screenshots / metrics>.
+
+- **Problem.** Video calls on thin laptops with weak lighting and unreliable bandwidth.
+- **Why on-device.** Frames never leave the machine, no cloud round-trip, and running
+  the networks on the NPU leaves CPU/GPU free for the call itself.
+- **What is combined.** Face tracking, background blur, low-light enhancement and
+  super-resolution in one NPU pipeline, with a bring-your-own low-light model from
+  outside the AI Hub zoo.
+- TODO: real before/after screenshots or GIFs (low-light, background blur, upscaled
+  low-res frame). Generate them from `scripts/smoke_test.sh` output and a dark test image.
+- TODO: decide whether to include a comparison against Windows Studio Effects. **No such
+  comparison exists yet, so none is claimed.**
 
 ## 3. Deployment & Accessibility
-- Installer: ARM64 MSIX / packaged exe. One double-click, runs offline.
-- Output as a standard virtual camera -> works in Zoom / Meet / Teams unmodified.
-- Fallback path for judges without a Snapdragon device (CPU EP), clearly documented.
-- Public repo, MIT licence, 2-minute quickstart.
-- Accessibility of the app itself: keyboard nav, captions, high-contrast toggle.
+
+What exists today:
+
+- The pipeline runs from a clone on any machine (CPU fallback): `bash scripts/smoke_test.sh`.
+- Windows-on-ARM64 install scripts ([packaging/](../packaging/)): pinned dependency list,
+  an offline wheel bundle (verified to resolve with no network), `install.ps1`, `run.ps1`.
+  **Written and dependency-checked but never executed on Windows-on-ARM.**
+- Virtual camera path: preview window captured by OBS Window Capture, exposed via OBS
+  Virtual Camera. **Untested.**
+
+What does **not** exist: a packaged installer (MSIX/exe), GUI controls, or any
+accessibility features in the app itself.
+
+- TODO: if hardware access is obtained, run the "first things to test" list in
+  [packaging/README.md](../packaging/README.md) and update this section with results.
 
 ## 4. Presentation & Documentation
-- Demo video 3–5 min: problem (30s) -> live toggle of each effect (90s) ->
-  architecture diagram (30s) -> NPU-vs-CPU benchmark chart (30s) -> impact (30s).
-- Architecture diagram: `docs/pipeline.md`.
-- Benchmark table: `benchmarks/results.md`.
-- This document as the written submission.
-- All materials in English. Work solely my own.
+
+- Repository: https://github.com/ATREAY/npu-video-studio
+- Architecture: [docs/pipeline.md](pipeline.md). TODO: render a diagram image.
+- Benchmarks: [benchmarks/results.md](../benchmarks/results.md), every number linked to its AI Hub job.
+- TODO: demo video (3–5 min). Planned structure: problem → app running live on CPU →
+  screen-recorded AI Hub job pages showing the Snapdragon X2 Elite device and NPU compute
+  breakdown → architecture → limitations stated plainly.
+- All materials in English.
+
+## Ownership and third-party material
+
+The project code is owned by the participant. Third-party models and weights are used
+under their upstream terms (see the README's third-party section). Zero-DCE is
+CC BY-NC 4.0 and is therefore not redistributed in the repository.
 
 ## Logistics
-- One submission only; cannot edit after submitting. Submit ~29 Sep, not on deadline day.
-- Double-check every intake-form field before submitting.
+
+- One submission per participant; it cannot be edited after submitting. Target ~29 Sep.
+- TODO: check every field of the submission form before submitting.
