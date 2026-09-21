@@ -84,7 +84,7 @@ accessibility features in the app itself.
 
 ## Ownership and third-party material
 
-The project code is owned by the participant. Third-party models and weights are used
+The project code is owned by the participant and released under the MIT License. Third-party models and weights are used
 under their upstream terms (see the README's third-party section). Zero-DCE is
 CC BY-NC 4.0 and is therefore not redistributed in the repository.
 

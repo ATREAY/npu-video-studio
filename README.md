@@ -85,6 +85,13 @@ CLAHE. To build the ONNX model locally (downloads the weights from the original 
 python aihub/byo_lowlight.py --onnx-only     # writes export_assets/zero_dce/zero_dce.onnx
 ```
 
+## License
+
+This project's own code is released under the [MIT License](LICENSE). Third-party
+models, weights and libraries keep their own licences (next section) and are **not**
+relicensed by it. In particular, Zero-DCE is CC BY-NC 4.0 and is not covered by, or
+distributed under, the MIT licence.
+
 ## Third-party components
 
 - Models from the [Qualcomm AI Hub Models](https://github.com/quic/ai-hub-models) zoo:
