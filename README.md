@@ -5,9 +5,9 @@ Hexagon NPU of Snapdragon X PCs. Each frame goes through face tracking, backgrou
 blur, low-light lift and super-resolution, with every neural network profiled on real
 Snapdragon X2 Elite silicon through Qualcomm AI Hub.
 
-Built for the **Snapdragon AI Lab – Build & Present Challenge**.
+Built for the **Snapdragon AI Lab - Build & Present Challenge**.
 
-## Status — read this first
+## Status - read this first
 
 | | State |
 |---|---|
@@ -97,7 +97,7 @@ distributed under, the MIT licence.
 - Models from the [Qualcomm AI Hub Models](https://github.com/quic/ai-hub-models) zoo:
   `mediapipe_face`, `mediapipe_selfie`, `quicksrnetmedium` (code BSD-3-Clause). The
   compiled ONNX files here are AI Hub outputs of those models; **the upstream weight
-  licences apply** — check each model's page on AI Hub.
+  licences apply** check each model's page on AI Hub.
 - Zero-DCE: see above.
 - ONNX Runtime, `onnxruntime-qnn`, NumPy, Pillow, SciPy, scikit-image, PyAV, OpenCV: their own licences.
 
